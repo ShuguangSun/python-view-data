@@ -1,4 +1,4 @@
-;;; python-view-data.el --- view data in python      -*- lexical-binding: t; -*-
+;;; python-view-data.el --- View data in python      -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2023  Shuguang Sun
 
@@ -6,7 +6,7 @@
 ;; Created: 2023/05/03
 ;; Version: 0.1
 ;; URL: https://github.com/ShuguangSun/python-view-data
-;; Package-Requires: ((emacs "26.1") (python "0.2") (csv-mode "1.12"))
+;; Package-Requires: ((emacs "28.1") (python "0.2") (csv-mode "1.12"))
 ;; Keywords: tools
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -328,8 +328,7 @@ Optional argument PROC-NAME process name."
     (when (and proc (not (process-get proc 'busy)))
       (delete-dups (split-string
                     (python-shell-send-string-no-output command proc)
-                    "@$,$@"))
-      )))
+                    "@$,$@")))))
 
 
 (defun python-view-data-read-object-name (p-string)
@@ -1127,8 +1126,8 @@ Optional argument PNUMBER page number to go."
         (python-view-data-mode 1)
         (goto-char (point-min))
         (if python-view-data-verbose
-            (python-view-data-write-to-dribble-buffer (format "Goto page: %s:%d\n" page pnumber)))
-        ))))
+            (python-view-data-write-to-dribble-buffer
+             (format "Goto page: %s:%d\n" page pnumber)))))))
 
 
 (defun python-view-data-goto-next-page ()
