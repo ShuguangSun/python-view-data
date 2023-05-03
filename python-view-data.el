@@ -165,7 +165,7 @@
 
 
 (defvar python-view-data-temp-object-list '()
-  "List of temparory varible for python-view-data.")
+  "List of temporary variable for python-view-data.")
 
 (defvar-local python-view-data-maxprint-p nil
   "Whether to print all data in one page.")
@@ -207,7 +207,7 @@
       (insert-before-markers text))))
 
 (defun python-view-data-toggle-maxprint ()
-  "Python viewdata do select."
+  "Python view data do select."
   (interactive)
   (setq python-view-data-page-number 0)
   (setq python-view-data-maxprint-p (not python-view-data-maxprint-p)))
@@ -352,7 +352,7 @@ P-STRING is the prompt string."
 
 ;; Optional argument OBJ the object (data.frame/tibble etc.) to print and view.
 ;; Optional argument PROC-NAME the name of associated ESS process.
-;; Optional argument MAXPRINT if non-nil, 100 rows/lines per page; if t, shwo all."
+;; Optional argument MAXPRINT if non-nil, 100 rows/lines per page; if t, show all."
 ;;   (interactive "P")
 ;;   (let* ((obj (or obj python-view-data-object
 ;;                   (car (python-view-data-read-object-name "Pandas Dataframe: "))))
@@ -395,7 +395,7 @@ P-STRING is the prompt string."
 
 
 ;; (defun python-view-data-get-element-from-dict (COMMAND &optional proc-name)
-;;   "Evaluate the COMMAND, which print a Python dictinary.
+;;   "Evaluate the COMMAND, which print a Python dictionary.
 ;; Return the elements of the result of COMMAND as an alist of
 ;; strings."
 ;;   (let* ((buf (get-buffer-create (format python-view-data-buffer-name-format obj proc-name)))
@@ -472,7 +472,7 @@ the `python-view-data-current-backend'.
 Argument STR Python script to run.")
 
 (cl-defgeneric python-view-data--create-indirect-buffer (backend str)
-  "Create indirect-buffer for editting.
+  "Create indirect-buffer for editing.
 
 Argument BACKEND Backend to dispatch, i.e.,
 the `python-view-data-current-backend'.
@@ -559,16 +559,16 @@ Initializing the history of operations, make temp object.
 
 Optional argument PROC-NAME The name of associated ESS process,
 usually `python-view-data-local-process-name'.
-Optional argument PROC The assciated ESS process."
+Optional argument PROC The associated ESS process."
   (when python-view-data-verbose
     (python-view-data-write-to-dribble-buffer
      (format "Initializing: %s\n" python-view-data-object))
     (python-view-data-write-to-dribble-buffer
-     (format "Current Biffer: %s\n" (buffer-name)))
+     (format "Current Buffer: %s\n" (buffer-name)))
     (python-view-data-write-to-dribble-buffer
      (format "Temp object: %s\n" python-view-data-temp-object)))
 
-  ;; Initializing the temparory object, for stepwise
+  ;; Initializing the temporary object, for stepwise
   (unless python-view-data-temp-object
     (setq python-view-data-temp-object
           (format "%s" (make-temp-name python-view-data-object)))
@@ -605,7 +605,7 @@ per page for csv+print/kable.
 
 Optional argument PROC-NAME The name of associated ESS process,
 usually `python-view-data-local-process-name'.
-Optional argument PROC The assciated ESS process."
+Optional argument PROC The associated ESS process."
   (when (and proc-name proc
              (not (process-get proc 'busy)))
     ;; (python-shell-send-string-no-output "b.__len__()")
@@ -639,11 +639,11 @@ Optional argument PROC The assciated ESS process."
 (cl-defmethod python-view-data-do-kill-buffer-hook ((_backend (eql pandas.to_csv)) proc-name proc)
   "Functions to run after `kill-buffer' on '*R Data View' buffer.
 
-The default is to rm the temparory object.
+The default is to rm the temporary object.
 
 Optional argument PROC-NAME The name of associated ESS process,
 usually `python-view-data-local-process-name'.
-Optional argument PROC The assciated ESS process."
+Optional argument PROC The associated ESS process."
     (when (and proc-name proc
                (not (process-get proc 'busy)))
       (if python-view-data-verbose
@@ -728,7 +728,7 @@ columns for select."
 
 
 (cl-defmethod python-view-data--do-summarise ((_backend (eql pandas.to_csv)) fun action)
-  "Do summarising by csv stepwisely, without modfiy the data frame.
+  "Do summarising by csv stepwisely, without modify the data frame.
 
 Optional argument FUN What to do with the data, e.g.,
 verb like count, unique, and etc..
@@ -878,7 +878,7 @@ usually `python-view-data-local-process-name'."
       ;; (print (alist-get :function python-view-data--action))
       ;; (print (alist-get ':type python-view-data--action))
       (insert "# Insert [all] variable name[s] (C-c C-i[a]), [all] Values (C-c C-l[v])\n")
-      (insert "# Line started with `#' will be omited\n")
+      (insert "# Line started with `#' will be omitted\n")
       (insert "# Don't comment code as all code will be wrapped in one line\n")
       (pcase fun
         ((or 'filter 'query)
@@ -977,7 +977,7 @@ Can be called only when the current buffer is an edit-indirect buffer."
 
 Argument TYPE Action type, e.g., update, reset, summarise.
 Argument FUN Action function to do with data, e.g., select, count, etc..
-Argument INDIRECT Indirect buffter to edit the parameters or verbs.
+Argument INDIRECT Indirect buffer to edit the parameters or verbs.
 Optional argument DESC if non-nil, then descending.
 Optional argument PROMPT prompt for `read-string'."
   (unless (and ;; (string= "R" ess-dialect)
@@ -1139,12 +1139,12 @@ Optional argument PROMPT prompt for `read-string'."
   (python-view-data-do-apply 'summarise 'describe nil nil))
 
 (defun python-view-data-summarise ()
-  "Python viewdata do summarise."
+  "Python view data do summarise."
   (interactive)
   (python-view-data-do-apply 'summarise 'summarise t nil))
 
 (defun python-view-data-overview ()
-  "Python viewdata do summarise."
+  "Python view data do summarise."
   (interactive)
   (python-view-data-do-apply 'summarise 'overview t nil))
 
@@ -1185,7 +1185,7 @@ Optional argument PROMPT prompt for `read-string'."
 ;;; ** goto page
 (defun python-view-data-goto-page (page &optional pnumber)
   "Goto PAGE.
-Optional argument PNUMBER pange number to go."
+Optional argument PNUMBER page number to go."
   (unless (and ;; (string= "R" ess-dialect)
            python-view-data-local-process-name)
     (error "Not in an Python buffer with attached process"))
@@ -1228,28 +1228,28 @@ Optional argument PNUMBER pange number to go."
 
 
 (defun python-view-data-goto-next-page ()
-  "Python viewdata do select."
+  "Python view data do select."
   (interactive)
   (python-view-data-goto-page 'next))
 
 (defun python-view-data-goto-previous-page ()
-  "Python viewdata do select."
+  "Python view data do select."
   (interactive)
   (python-view-data-goto-page 'previous))
 
 (defun python-view-data-goto-first-page ()
-  "Python viewdata do select."
+  "Python view data do select."
   (interactive)
   (python-view-data-goto-page 'first))
 
 (defun python-view-data-goto-last-page ()
-  "Python viewdata do select."
+  "Python view data do select."
   (interactive)
   (python-view-data-goto-page 'last))
 
 
 (defun python-view-data-goto-page-number (&optional pnumber)
-  "Python viewdata do select.
+  "Python view data do select.
 
 Optional argument PNUMBER The page number to go to."
   (interactive "NGoto page:")
@@ -1260,7 +1260,7 @@ Optional argument PNUMBER The page number to go to."
 ;;; * save data
 
 (cl-defmethod python-view-data-do-save ((_backend (eql pandas.to_csv)) file-name)
-  "Python viewdata doing select by write.csv stepwise.
+  "Python view data doing select by write.csv stepwise.
 
 Optional argument FILE-NAME file name."
   (let (cmd result)
@@ -1272,7 +1272,7 @@ Optional argument FILE-NAME file name."
     result))
 
 (cl-defmethod python-view-data-do-save ((_backend (eql pandas.to_excel)) file-name)
-  "Python viewdata doing select by write.excel stepwise.
+  "Python view data doing select by write.excel stepwise.
 
 Optional argument FILE-NAME file name."
   (let (cmd result)
@@ -1285,7 +1285,7 @@ Optional argument FILE-NAME file name."
 
 
 (defun python-view-data-save ()
-  "Python viewdata do save."
+  "Python view data do save."
   (interactive)
   (unless (and ;; (string= "R" ess-dialect)
            python-view-data-local-process-name)
@@ -1331,7 +1331,7 @@ Optional argument FILE-NAME file name."
 
 Optional argument OBJ the object (data.frame/tibble etc.) to print and view.
 Optional argument PROC-NAME the name of associated ESS process.
-Optional argument MAXPRINT if non-nil, 100 rows/lines per page; if t, shwo all."
+Optional argument MAXPRINT if non-nil, 100 rows/lines per page; if t, show all."
   (interactive "P")
   (let* ((obj (or obj python-view-data-object))
          (proc-name (or proc-name
