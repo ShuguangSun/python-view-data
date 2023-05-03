@@ -347,105 +347,6 @@ P-STRING is the prompt string."
      (t spec))))
 
 
-;; (defun python-view-data-print-ex (&optional obj proc-name maxprint)
-;;   "Do print.
-
-;; Optional argument OBJ the object (data.frame/tibble etc.) to print and view.
-;; Optional argument PROC-NAME the name of associated ESS process.
-;; Optional argument MAXPRINT if non-nil, 100 rows/lines per page; if t, show all."
-;;   (interactive "P")
-;;   (let* ((obj (or obj python-view-data-object
-;;                   (car (python-view-data-read-object-name "Pandas Dataframe: "))))
-;;          ;; (proc-name (or proc-name (buffer-local-value 'python-view-data-local-process-name (current-buffer))))
-;;          (buf (get-buffer-create (format python-view-data-buffer-name-format obj proc-name)))
-;;          ;; (proc-name-buf (buffer-local-value 'python-view-data-local-process-name buf))
-;;          (proc (get-process (or proc-name (python-shell-get-process-or-error))))
-;;          command)
-;;     ;; (if (or (not proc-name-buf) (equal proc-name proc-name-buf))
-;;     ;; A new view or from the same process
-;;     (with-current-buffer buf
-;;       (unless python-view-data-object
-;;         (setq python-view-data-object obj)
-;;         (setq python-view-data-local-process-name proc-name))
-
-;;       (setq command
-;;             (format python-view-data-df-command obj))
-;;       )
-
-;;     (when (and ;; proc-name
-;;                proc
-;;                (not (process-get proc 'busy)))
-;;       (with-current-buffer buf
-;;         (erase-buffer)
-;;         (setq-local scroll-preserve-screen-position t)
-;;         (insert (string-replace "\\r\\n" "\n"
-;;                         (replace-regexp-in-string
-;;                          (rx (or (: bos "'") (: "'" eos))) ""
-;;                          (python-shell-send-string-no-output
-;;                           command
-;;                           proc))))
-;;         (csv-mode)
-;;         (csv-align-mode +1)
-;;         (csv-header-line)
-;;         (goto-char (point-min)))
-;;       ;; buf
-;;       )))
-
-
-
-
-;; (defun python-view-data-get-element-from-dict (COMMAND &optional proc-name)
-;;   "Evaluate the COMMAND, which print a Python dictionary.
-;; Return the elements of the result of COMMAND as an alist of
-;; strings."
-;;   (let* ((buf (get-buffer-create (format python-view-data-buffer-name-format obj proc-name)))
-;;          ;; (proc-name-buf (buffer-local-value 'python-view-data-local-process-name buf))
-;;          (proc (get-process (python-shell-get-process-or-error)))
-;;          command
-;;          objects)
-;;     ;; (if (or (not proc-name-buf) (equal proc-name proc-name-buf))
-;;     ;; A new view or from the same process
-;;     ;; (print buf)
-;;     ;; (print obj)
-;;     (with-current-buffer buf
-;;       ;; (unless python-view-data-object
-;;       ;;   (setq python-view-data-object obj)
-;;       ;;   (setq python-view-data-local-process-name proc-name))
-
-;;       ;; (setq command "\",\".join(dir())\n")
-;;       (setq command "print(\"@$,$@\".join(dir()))\n")
-;;       )
-
-;;     ;; (print proc)
-;;     ;; (print command)
-;;     (when (and ;; proc-name
-;;                proc
-;;                (not (process-get proc 'busy)))
-;;       ;; (print "aa")
-;;       ;; (print (python-shell-send-string-no-output command proc))
-;;       (setq objects (split-string (python-shell-send-string-no-output command proc) "@$,$@"))
-;;       (print objects)
-;;       (with-current-buffer buf
-;;         (erase-buffer)
-;;         (insert (python-shell-send-string-no-output command proc))
-;;         ;; (insert objects)
-;;         (toggle-truncate-lines 1)
-;;         (goto-char (point-min))
-;;         (save-excursion
-;;           (save-restriction
-;;             (goto-char (point-min))
-;;             (while (re-search-forward "^\\([.]+ \\)" nil t)
-;;               (goto-char (point-min))
-;;               ;; (print (match-string 1))
-;;               (replace-match "" nil nil nil nil))
-;;             ))
-;;         (setq-local scroll-preserve-screen-position t)
-;;         (goto-char (point-min)))
-;;       ;; buf
-;;       )))
-
-
-
 ;;; Utils
 
 ;;; Backend Access API
@@ -557,9 +458,9 @@ Argument STR Python script to run.")
 
 Initializing the history of operations, make temp object.
 
-Optional argument PROC-NAME The name of associated ESS process,
+Optional argument PROC-NAME The name of associated Python process,
 usually `python-view-data-local-process-name'.
-Optional argument PROC The associated ESS process."
+Optional argument PROC The associated Python process."
   (when python-view-data-verbose
     (python-view-data-write-to-dribble-buffer
      (format "Initializing: %s\n" python-view-data-object))
@@ -603,9 +504,9 @@ Optional argument PROC The associated ESS process."
 If `python-view-data-maxprint-p' is nil, it will show 100 rows/lines
 per page for csv+print/kable.
 
-Optional argument PROC-NAME The name of associated ESS process,
+Optional argument PROC-NAME The name of associated Python process,
 usually `python-view-data-local-process-name'.
-Optional argument PROC The associated ESS process."
+Optional argument PROC The associated Python process."
   (when (and proc-name proc
              (not (process-get proc 'busy)))
     ;; (python-shell-send-string-no-output "b.__len__()")
@@ -641,9 +542,9 @@ Optional argument PROC The associated ESS process."
 
 The default is to rm the temporary object.
 
-Optional argument PROC-NAME The name of associated ESS process,
+Optional argument PROC-NAME The name of associated Python process,
 usually `python-view-data-local-process-name'.
-Optional argument PROC The associated ESS process."
+Optional argument PROC The associated Python process."
     (when (and proc-name proc
                (not (process-get proc 'busy)))
       (if python-view-data-verbose
@@ -865,7 +766,7 @@ select, count, and etc..
 Optional argument OBJ-LIST Columns/variables to do with.
 Optional argument TEMP-OBJECT Temporary data in the view process.
 Optional argument PARENT-BUF The associated parent buffer for the view process.
-Optional argument PROC-NAME The name of associated ESS process,
+Optional argument PROC-NAME The name of associated Python process,
 usually `python-view-data-local-process-name'."
   (let ((buf (get-buffer-create (format python-view-data-source-buffer-name-format temp-object)))
         pts)
@@ -980,7 +881,7 @@ Argument FUN Action function to do with data, e.g., select, count, etc..
 Argument INDIRECT Indirect buffer to edit the parameters or verbs.
 Optional argument DESC if non-nil, then descending.
 Optional argument PROMPT prompt for `read-string'."
-  (unless (and ;; (string= "R" ess-dialect)
+  (unless (and
            python-view-data-local-process-name)
     (error "Not in an Python buffer with attached process"))
   (let* ((buf (current-buffer))
@@ -1186,7 +1087,7 @@ Optional argument PROMPT prompt for `read-string'."
 (defun python-view-data-goto-page (page &optional pnumber)
   "Goto PAGE.
 Optional argument PNUMBER page number to go."
-  (unless (and ;; (string= "R" ess-dialect)
+  (unless (and
            python-view-data-local-process-name)
     (error "Not in an Python buffer with attached process"))
   (let* ((buf (current-buffer))
@@ -1287,7 +1188,7 @@ Optional argument FILE-NAME file name."
 (defun python-view-data-save ()
   "Python view data do save."
   (interactive)
-  (unless (and ;; (string= "R" ess-dialect)
+  (unless (and
            python-view-data-local-process-name)
     (error "Not in an Python buffer with attached process"))
   (let* ((buf (current-buffer))
@@ -1330,7 +1231,7 @@ Optional argument FILE-NAME file name."
   "Do print.
 
 Optional argument OBJ the object (data.frame/tibble etc.) to print and view.
-Optional argument PROC-NAME the name of associated ESS process.
+Optional argument PROC-NAME the name of associated Python process.
 Optional argument MAXPRINT if non-nil, 100 rows/lines per page; if t, show all."
   (interactive "P")
   (let* ((obj (or obj python-view-data-object))
@@ -1399,9 +1300,10 @@ Optional argument MAXPRINT if non-nil, 100 rows/lines per page; if t, show all."
   "Ess R dv using pprint.
 Optional argument MAXPRINT maxprint."
   (interactive "P")
-  ;; (unless (and ;; (string= "R" ess-dialect)
-  ;;          python-view-data-local-process-name)
-  ;;   (error "Not in an Python buffer with attached process"))
+  (unless (or python-view-data-local-process-name
+              (memq major-mode
+                    '(python-ts-mode python-mode inferior-python-mode)))
+    (warn "Not in an Python buffer with attached process"))
   (if python-view-data-verbose
         (python-view-data-write-to-dribble-buffer "\n\n"))
   (let* ((obj (or python-view-data-object
