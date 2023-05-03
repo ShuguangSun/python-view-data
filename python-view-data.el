@@ -37,7 +37,7 @@
 (require 'csv-mode)
 
 (defgroup python-view-data ()
-  "python-view-data"
+  "Python view data."
   :group 'python
   :prefix "python-view-data-")
 
@@ -139,7 +139,7 @@
 
 
 (defvar-local python-view-data-object nil
-  "Object name viewing")
+  "Object name viewing.")
 
 (defvar-local python-view-data-object-list nil
   ;; This is a list of the currently known object names.  It is
@@ -152,7 +152,7 @@
   "The name of the Python process associated with the current buffer.")
 
 (defvar-local python-view-data-temp-object nil
-  "temp object")
+  "Temporary object.")
 
 (defvar-local python-view-data-history nil
   "The history of operations.")
@@ -172,10 +172,10 @@
 
 
 (defvar-local python-view-data-page-number 0
-  "current page number")
+  "Current page number.")
 
 (defvar-local python-view-data-total-page 1
-  "total page number")
+  "Total page number.")
 
 
 
@@ -245,7 +245,7 @@
 
 
 (define-minor-mode python-view-data-mode
-  "python-view-data"
+  "Python view data."
   :global nil
   :group 'python-view-data
   :keymap python-view-data-mode-map
@@ -286,7 +286,8 @@ Turning on this mode runs the normal hook `python-view-data-edit-mode-hook'."
 
 
 (defun python-view-data-get-object-list (&optional proc-name)
-  "Return a list of current S object names associated with process NAME."
+  "Return a list of current S object names associated with process NAME.
+Optional argument PROC-NAME process name."
   (let* (;;(buf (get-buffer-create (format python-view-data-buffer-name-format obj proc-name)))
          ;; (proc-name-buf (buffer-local-value 'python-view-data-local-process-name buf))
          (proc (get-process (or proc-name (python-shell-get-process-or-error))))
@@ -308,7 +309,8 @@ Turning on this mode runs the normal hook `python-view-data-edit-mode-hook'."
       )))
 
 (defun python-view-data-get-object-cols (&optional proc-name)
-  "Return a list of current S object names associated with process NAME."
+  "Return a list of current S object names associated with process NAME.
+Optional argument PROC-NAME process name."
   (let* (;;(buf (get-buffer-create (format python-view-data-buffer-name-format obj proc-name)))
          ;; (proc-name-buf (buffer-local-value 'python-view-data-local-process-name buf))
          (proc (get-process (or proc-name (python-shell-get-process-or-error))))
@@ -523,10 +525,18 @@ the `python-view-data-current-backend'.
 Argument STR Python script to run.")
 
 (cl-defgeneric python-view-data-do-group (backend str)
-  "Groupby.")
+  "Groupby.
+
+Argument BACKEND Backend to dispatch, i.e.,
+the `python-view-data-current-backend'.
+Argument STR Python script to run.")
 
 (cl-defgeneric python-view-data-do-ungroup (backend str)
-  "Ungroup.")
+  "Ungroup.
+
+Argument BACKEND Backend to dispatch, i.e.,
+the `python-view-data-current-backend'.
+Argument STR Python script to run.")
 
 
 ;;; * print-backend: print
