@@ -289,7 +289,7 @@ Turning on this mode runs the normal hook `python-view-data-edit-mode-hook'."
 
 
 (defun python-view-data-get-object-list (&optional proc-name)
-  "Return a list of current S object names associated with process NAME.
+  "Return a list of current Python object names associated with process NAME.
 Optional argument PROC-NAME process name."
   (let* (;;(buf (get-buffer-create (format python-view-data-buffer-name-format obj proc-name)))
          ;; (proc-name-buf (buffer-local-value 'python-view-data-local-process-name buf))
@@ -303,6 +303,8 @@ Optional argument PROC-NAME process name."
                           python-view-data-get-object-command))
 
     (when (and proc (not (process-get proc 'busy)))
+      (python-shell-send-string "import pandas" proc)
+      (sleep-for 0.1)
       (setq python-view-data-object-list
             (delete-dups (split-string
                           (python-shell-send-string-no-output command proc)
@@ -312,7 +314,7 @@ Optional argument PROC-NAME process name."
       )))
 
 (defun python-view-data-get-object-cols (&optional proc-name)
-  "Return a list of current S object names associated with process NAME.
+  "Return a list of current Python object names associated with process NAME.
 Optional argument PROC-NAME process name."
   (let* (;;(buf (get-buffer-create (format python-view-data-buffer-name-format obj proc-name)))
          ;; (proc-name-buf (buffer-local-value 'python-view-data-local-process-name buf))
@@ -336,7 +338,7 @@ Optional argument PROC-NAME process name."
 P-STRING is the prompt string."
   (let* (;; (default (ess-read-object-name-dump))
          (object-list (python-view-data-get-object-list
-                       (or python-view-data--local-process-name
+                       (or python-view-data-local-process-name
                            (python-shell-get-process-or-error))))
          (spec (completing-read p-string object-list nil nil nil nil ;;default
                                 )))
@@ -486,7 +488,7 @@ Optional argument PROC The associated Python process."
          (format "Initializing Temp object: %s\n" python-view-data-temp-object)))
       ;; (python-shell-send-string
       (python-shell-send-string
-       (format "%s=%s\n" python-view-data-temp-object python-view-data-object)
+       (format "import pandas\n\n%s=%s\n" python-view-data-temp-object python-view-data-object)
        proc)
       ;; (python-shell-send-string
       ;;  (format "%s.info()\n" python-view-data-temp-object)
@@ -522,7 +524,7 @@ Optional argument PROC The associated Python process."
        (format "Get page numbers of %s.\n"
                python-view-data-temp-object)))
 
-    (setq temp-obj python-view-data-temp-object)
+    ;; (setq temp-obj python-view-data-temp-object)
     (setq python-view-data-total-page
           (python-shell-send-string-no-output
            (format "%s.__len__()\n" python-view-data-temp-object) proc))
@@ -785,7 +787,7 @@ usually `python-view-data-local-process-name'."
       (insert "# Don't comment code as all code will be wrapped in one line\n")
       (pcase fun
         ((or 'filter 'query)
-         (setq python-view-data-completion-object (car obj-list))
+         ;; (setq python-view-data-completion-object (car obj-list))
          (insert "# .query(...)\n")
          (setq pts (point))
          (insert (mapconcat (lambda (x) (propertize x 'evd-object x))
