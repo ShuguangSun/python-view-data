@@ -1,9 +1,13 @@
 ;;; python-view-data.el --- view data in python      -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021  Shuguang Sun
+;; Copyright (C) 2023  Shuguang Sun
 
 ;; Author: Shuguang Sun <shuguang79@qq.com>
-;; Keywords: convenience
+;; Created: 2023/05/03
+;; Version: 0.1
+;; URL: https://github.com/ShuguangSun/python-view-data
+;; Package-Requires: ((emacs "26.1") (python "0.2") (csv-mode "1.12"))
+;; Keywords: tools
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -22,9 +26,15 @@
 
 ;; View data in python
 
+;; Call `python-view-data-print`, select a pandas dataframe, and then a buffer
+;; will pop up with data listed/printed. Further verbs can be done, like filter
+;; (query), select/unselect, mutate, group/ungroup, count, unique, describe, and
+;; etc. It can be reset (`python-view-data-reset`) any time.
+
 ;;; Code:
 
 (require 'python)
+(require 'csv-mode)
 
 (defgroup python-view-data ()
   "python-view-data"
