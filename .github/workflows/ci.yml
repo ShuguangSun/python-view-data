@@ -9,14 +9,14 @@ on:
     paths-ignore:
       - '**.md'
       - '**.gif'
-      
+
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         emacs_version:
-          - 27.2
+          - 28.1
 
     steps:
     - name: Setup GNU Emacs
