@@ -33,6 +33,9 @@
 
 ;;; Code:
 
+(eval-when-compile (require 'cl-lib))
+(eval-when-compile (require 'cl-generic))
+
 (require 'python)
 (require 'csv-mode)
 
