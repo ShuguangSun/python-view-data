@@ -21,7 +21,7 @@ Call `python-view-data-print`, select a pandas dataframe, and then a buffer will
 
 To avoid mistaking break the orignial data, it will make a copy of the dataframe as default.
 
-You can the history in the buffer of `*Python View Data*'.
+You can the history in the buffer of `*Python View Data*`.
 
 
 ## Customization
