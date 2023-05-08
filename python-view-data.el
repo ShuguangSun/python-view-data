@@ -783,28 +783,28 @@ usually `python-view-data-local-process-name'."
       (setq python-view-data--action `((:type . ,type) (:function . ,fun)))
       ;; (print (alist-get :function python-view-data--action))
       ;; (print (alist-get ':type python-view-data--action))
-      (insert "# Insert [all] variable name[s] (C-c C-i[a]), [all] Values (C-c C-l[v])\n")
-      (insert "# Line started with `#' will be omitted\n")
-      (insert "# Don't comment code as all code will be wrapped in one line\n")
+      (insert ";; Insert [all] variable name[s] (C-c C-i[a]), [all] Values (C-c C-l[v])\n")
+      (insert ";; Line started with `;' will be omitted\n")
+      (insert ";; Don't comment code as all code will be wrapped in one line\n")
       (pcase fun
         ((or 'filter 'query)
          ;; (setq python-view-data-completion-object (car obj-list))
-         (insert "# .query(...)\n")
+         (insert ";; .query(...)\n")
          (setq pts (point))
          (insert (mapconcat (lambda (x) (propertize x 'evd-object x))
                             (delete-dups (nreverse obj-list)) ","))
          (goto-char pts))
         ('mutate
-         (insert "# .assign(...)\n")
+         (insert ";; .assign(...)\n")
          (setq pts (point))
          (insert (mapconcat (lambda (x) (format " = %s" (propertize x 'evd-object x)))
                             (delete-dups (nreverse obj-list)) ","))
          (goto-char pts))
         ('reset
-         (insert "# reset\n")
+         (insert ";; reset\n")
          (insert obj-list))
         (_
-         (insert "# ... \n")
+         (insert ";; ... \n")
          (setq pts (point))
          (insert (mapconcat #'identity (delete-dups (nreverse obj-list)) ","))
          (goto-char pts)))
@@ -833,7 +833,7 @@ Can be called only when the current buffer is an edit-indirect buffer."
         (save-excursion
           (save-match-data
             (goto-char (point-min))
-            (flush-lines "^#")
+            (flush-lines "^;")
             (fill-region (point-min) (point-max))
             (setq command (buffer-substring-no-properties (point-min) (point-max)))
             ;; make command in one line to avoid the print of ` + ' in the output buffer
