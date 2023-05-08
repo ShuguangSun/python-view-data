@@ -74,8 +74,8 @@
 (defcustom python-view-data-current-backend 'pandas.to_csv
   "The python-view-data backend in using."
   :type `(choice ,@(mapcar (lambda (x)
-			                 `(const :tag ,(symbol-name x) ,x))
-			               python-view-data-backend-list)
+                             `(const :tag ,(symbol-name x) ,x))
+                           python-view-data-backend-list)
                  (symbol :tag "Other"))
   :group 'python-view-data)
 
@@ -88,16 +88,16 @@
 (defcustom python-view-data-current-update-print-backend 'pandas.to_csv
   "The python-view-data backend in using."
   :type `(choice ,@(mapcar (lambda (x)
-			                 `(const :tag ,(symbol-name x) ,x))
-			               python-view-data-print-backend-list)
+                             `(const :tag ,(symbol-name x) ,x))
+                           python-view-data-print-backend-list)
                  (symbol :tag "Other"))
   :group 'python-view-data)
 
 (defcustom python-view-data-current-summarize-print-backend 'pandas.to_csv
   "The python-view-data backend in using."
   :type `(choice ,@(mapcar (lambda (x)
-			                 `(const :tag ,(symbol-name x) ,x))
-			               python-view-data-print-backend-list)
+                             `(const :tag ,(symbol-name x) ,x))
+                           python-view-data-print-backend-list)
                  (symbol :tag "Other"))
   :group 'python-view-data)
 
@@ -115,8 +115,8 @@
 (defcustom python-view-data-current-save-backend 'pandas.to_csv
   "The backend to save data."
   :type `(choice ,@(mapcar (lambda (x)
-			                 `(const :tag ,(symbol-name x) ,x))
-			               python-view-data-save-backend-list)
+                             `(const :tag ,(symbol-name x) ,x))
+                           python-view-data-save-backend-list)
                  (symbol :tag "Other"))
   :group 'python-view-data)
 
@@ -154,6 +154,7 @@
 (defvar-local python-view-data-local-process-name nil
   "The name of the Python process associated with the current buffer.")
 
+
 (defvar-local python-view-data-temp-object nil
   "Temporary object.")
 
@@ -163,8 +164,15 @@
 (defvar-local python-view-data--local-mode-line-process-indicator '("")
   "List of local process indicators.")
 
-(defvar-local python-view-data--group nil)
+(defvar-local python-view-data--group nil
+  "Group variables.")
 
+(defvar-local python-view-data--parent-buffer nil
+  "The parent buffer related to the indirect buffer.")
+(defvar-local python-view-data--reset-buffer-p nil
+  "Is this indirect buffer is to reset the view buffer?")
+(defvar-local python-view-data--action nil
+  "The action related to the indirect buffer.")
 
 
 (defvar python-view-data-temp-object-list '()
@@ -549,13 +557,13 @@ The default is to rm the temporary object.
 Optional argument PROC-NAME The name of associated Python process,
 usually `python-view-data-local-process-name'.
 Optional argument PROC The associated Python process."
-    (when (and proc-name proc
-               (not (process-get proc 'busy)))
-      (if python-view-data-verbose
-          (python-view-data-write-to-dribble-buffer "Remove temp object.\n"))
-      (python-shell-send-string (format "del %s\n" python-view-data-temp-object))
-      (python-view-data-write-to-dribble-buffer
-       (format "del %s\n" python-view-data-temp-object))))
+  (when (and proc-name proc
+             (not (process-get proc 'busy)))
+    (if python-view-data-verbose
+        (python-view-data-write-to-dribble-buffer "Remove temp object.\n"))
+    (python-shell-send-string (format "del %s\n" python-view-data-temp-object))
+    (python-view-data-write-to-dribble-buffer
+     (format "del %s\n" python-view-data-temp-object))))
 
 
 ;;; ** Utilities
@@ -752,13 +760,6 @@ Optional argument PNUMBER The page number to go to."
   (setq python-view-data--group nil))
 
 
-
-
-(defvar-local python-view-data--parent-buffer nil)
-(defvar-local python-view-data--reset-buffer-p nil)
-(defvar-local python-view-data--action nil)
-(defvar-local python-view-data-local-process-name nil)
-
 (cl-defmethod python-view-data--create-indirect-buffer
   ((_backend (eql pandas.to_csv))
    type fun obj-list temp-object parent-buf proc-name)
@@ -805,7 +806,7 @@ usually `python-view-data-local-process-name'."
         (_
          (insert "# ... \n")
          (setq pts (point))
-         (insert (mapconcat 'identity (delete-dups (nreverse obj-list)) ","))
+         (insert (mapconcat #'identity (delete-dups (nreverse obj-list)) ","))
          (goto-char pts)))
       (setq python-view-data-local-process-name proc-name)
       (setq python-view-data-temp-object
@@ -1058,12 +1059,12 @@ Optional argument PROMPT prompt for `read-string'."
   "Select the VERB to do."
   (interactive (list (completing-read
                       "verb: "
-				      (append python-view-data-verb-update-list
+                      (append python-view-data-verb-update-list
                               python-view-data-verb-update-indirect-list
                               python-view-data-verb-summarise-list
                               python-view-data-verb-summarise-indirect-list
                               '("reset"))
-				      nil t)))
+                      nil t)))
   (cond
    ((member verb python-view-data-verb-update-list)
     (python-view-data-do-apply 'update (intern verb) nil nil))
@@ -1119,11 +1120,11 @@ Optional argument PNUMBER page number to go."
         (erase-buffer)
         (setq-local scroll-preserve-screen-position t)
         (insert (string-replace "\\r\\n" "\n"
-                        (replace-regexp-in-string
-                         (rx (or (: bos "'") (: "'" eos))) ""
-                         (python-shell-send-string-no-output
-                          (cdr command)
-                          proc))))
+                                (replace-regexp-in-string
+                                 (rx (or (: bos "'") (: "'" eos))) ""
+                                 (python-shell-send-string-no-output
+                                  (cdr command)
+                                  proc))))
         (python-view-data-write-to-dribble-buffer (format "%s\n" (cdr command)))
         (python-view-data-mode 1)
         (goto-char (point-min))
@@ -1242,7 +1243,7 @@ Optional argument MAXPRINT if non-nil, 100 rows/lines per page; if t, show all."
          (proc-name (or proc-name
                         (buffer-local-value 'python-view-data-local-process-name
                                             (current-buffer))
-                         (python-shell-get-process-or-error)))
+                        (python-shell-get-process-or-error)))
          (buf (get-buffer-create (format python-view-data-buffer-name-format
                                          obj proc-name)))
          ;; (proc-name-buf (buffer-local-value 'python-view-data-local-process-name buf))
@@ -1287,11 +1288,11 @@ Optional argument MAXPRINT if non-nil, 100 rows/lines per page; if t, show all."
         (erase-buffer)
         (setq-local scroll-preserve-screen-position t)
         (insert (string-replace "\\r\\n" "\n"
-                        (replace-regexp-in-string
-                         (rx (or (: bos "'") (: "'" eos))) ""
-                         (python-shell-send-string-no-output
-                          (cdr command)
-                          proc))))
+                                (replace-regexp-in-string
+                                 (rx (or (: bos "'") (: "'" eos))) ""
+                                 (python-shell-send-string-no-output
+                                  (cdr command)
+                                  proc))))
         (python-view-data-write-to-dribble-buffer (format "%s\n" (cdr command)))
         (python-view-data-mode 1)
         (goto-char (point-min)))
@@ -1309,7 +1310,7 @@ Optional argument MAXPRINT maxprint."
                     '(python-ts-mode python-mode inferior-python-mode)))
     (warn "Not in an Python buffer with attached process"))
   (if python-view-data-verbose
-        (python-view-data-write-to-dribble-buffer "\n\n"))
+      (python-view-data-write-to-dribble-buffer "\n\n"))
   (let* ((obj (or python-view-data-object
                   (tabulated-list-get-id)
                   (python-view-data-read-object-name "Pandas Dataframe: "))))
