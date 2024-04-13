@@ -7,7 +7,7 @@
 
 View data in Python.
 
-If you are a R user, please find out `[ess-veiw-data](https://github.com/ShuguangSun/ess-view-data)'.
+If you are a R user, please find out `[ess-view-data](https://github.com/ShuguangSun/ess-view-data)'.
 
 ## Installation
 
