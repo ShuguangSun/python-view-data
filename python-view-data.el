@@ -35,6 +35,11 @@
 ;; The data is retrieved through a small protocol (`__pv_page') sent to the
 ;; inferior Python process.  Data is transferred as tab-separated text, which
 ;; makes it robust to the encoding used by the process.
+;;
+;; In the table view the column header is rebuilt on every redisplay from the
+;; window's horizontal scroll (a buffer-local `pre-redisplay-functions' hook),
+;; so the header stays aligned with the data columns when the table is wider
+;; than the window and is scrolled horizontally.
 
 ;;; Code:
 
@@ -620,6 +625,191 @@ Python process used to fetch the completion candidates."
     (when cols
       (completing-read-multiple (format "Select variables (%s): " fun)
                                 opts nil t))))
+
+;;; Scrolling table header
+
+;; The stock `tabulated-list-init-header' builds a static header whose
+;; labels are pinned to the left edge of the window text area with
+;; `:align-to'.  Horizontal scrolling moves the body but not the
+;; header, so the two drift apart as soon as the table is wider than
+;; the window.  The dynamic header below is rebuilt before every
+;; redisplay (via a buffer-local `pre-redisplay-functions' hook, the
+;; same mechanism Emacs uses for `header-line-indent-mode') from the
+;; window's current horizontal scroll: each label is placed at its
+;; buffer column minus the scroll, labels outside the viewport are
+;; omitted and a partially visible label is sliced to its visible part.
+
+(defun python-view-data--table-sort-indicator (desc)
+  "Sort indicator character for the table header, DESC for descending.
+Uses the same characters as `tabulated-list-init-header'; falls back
+to the default arrow glyphs if the customization variables are absent
+(they exist since Emacs 27.1)."
+  (if desc
+      (if (boundp 'tabulated-list-gui-sort-indicator-desc)
+          tabulated-list-gui-sort-indicator-desc
+        ?▲)
+    (if (boundp 'tabulated-list-gui-sort-indicator-asc)
+        tabulated-list-gui-sort-indicator-asc
+      ?▼)))
+
+(defun python-view-data--table-header-string (fmt hscroll win-width
+                                                &optional indent-width)
+  "Table header line string for `tabulated-list-format' FMT.
+
+The labels are laid out like `tabulated-list-init-header' does, but
+relative to the window viewport [HSCROLL, HSCROLL+WIN-WIDTH): every
+label is placed at its buffer column minus HSCROLL, labels outside the
+viewport are omitted and a partially visible label is sliced to its
+visible part, so the header stays aligned with the body when the
+window is horizontally scrolled.  INDENT-WIDTH (default 0) is added
+to each `:align-to' offset; pass `header-line-indent-width' on Emacs
+29+ so the header also lines up with display line numbers.
+
+`tabulated-list-sort-key' (sort indicator) and `tabulated-list-padding'
+are read from the current buffer."
+  (let* ((len (length fmt))
+         (x (max tabulated-list-padding 0))
+         (hscroll (floor hscroll))
+         (right-edge (+ hscroll (floor win-width)))
+         (indent (or indent-width 0))
+         (cols nil)
+         (button-props (list 'help-echo "Click to sort by column"
+                             'mouse-face 'header-line-highlight
+                             'keymap tabulated-list-sort-button-map)))
+    (dotimes (n len)
+      (let* ((col (aref fmt n))
+             (not-last-col (< n (1- len)))
+             (label (nth 0 col))
+             (pname label)
+             (orig-lablen (string-width label))
+             (width (nth 1 col))
+             (props (nthcdr 3 col))
+             (pad-right (or (plist-get props :pad-right) 1))
+             (right-align (plist-get props :right-align))
+             (next-x (+ x pad-right width))
+             (available-space
+              (and not-last-col
+                   (if right-align
+                       width
+                     (let* ((next-col (aref fmt (1+ n)))
+                            (next-right (plist-get (nthcdr 3 next-col)
+                                                   :right-align))
+                            (next-width (nth 1 next-col)))
+                       (if next-right
+                           (- (+ width next-width)
+                              (min next-width (string-width (car next-col))))
+                         width))))))
+        ;; Truncate the label exactly like `tabulated-list-init-header'.
+        (when (and (>= orig-lablen 3)
+                   not-last-col
+                   (> orig-lablen available-space))
+          (setq label (truncate-string-to-width label available-space nil nil t)))
+        ;; Append the sort indicator for the sorted column.
+        (when (and (nth 2 col)
+                   (equal (car col) (car tabulated-list-sort-key)))
+          (unless (and (< orig-lablen 3) not-last-col)
+            (setq label (concat label
+                                (format " %c"
+                                        (python-view-data--table-sort-indicator
+                                         (cdr tabulated-list-sort-key)))))))
+        ;; Slice the label region [L0, L1) against the viewport.
+        (let* ((sw (string-width label))
+               (l0 (if right-align (max x (- (+ x width) sw)) x))
+               (l1 (if right-align (max (+ x width) (+ x sw)) (+ x sw)))
+               (v0 (max l0 hscroll))
+               (v1 (min l1 right-edge)))
+          (when (< v0 v1)
+            (let* ((slice-start (- v0 l0))
+                   (slice-width (- v1 v0))
+                   (text (if (and (= slice-start 0) (= slice-width sw))
+                              label
+                            (truncate-string-to-width label
+                                                      (+ slice-start slice-width)
+                                                      slice-start)))
+                   (text (cond
+                          ((not (nth 2 col))
+                           (propertize text 'tabulated-list-column-name pname))
+                          ((equal (car col) (car tabulated-list-sort-key))
+                           (apply #'propertize text
+                                  'face 'bold
+                                  'tabulated-list-column-name pname
+                                  button-props))
+                          (t
+                           (apply #'propertize text
+                                  'tabulated-list-column-name pname
+                                  button-props)))))
+              (push (concat
+                     (propertize " " 'display
+                                 `(space :align-to (+ ,indent ,(- v0 hscroll))))
+                     text)
+                    cols))
+            ;; Gap before the next column, when the next label is visible.
+            (when (and not-last-col (>= pad-right 0) (< next-x right-edge))
+              (push (propertize " " 'display
+                                `(space :align-to (+ ,indent ,(- next-x hscroll)))
+                                'face 'fixed-pitch)
+                    cols))))
+        (setq x next-x)))
+    (apply 'concat (nreverse cols))))
+
+(defun python-view-data--table-header-refresh (window)
+  "Rebuild `header-line-format' for WINDOW from its horizontal scroll.
+The label positions follow the window viewport, so the header stays
+aligned with the body under horizontal scrolling.  Reads
+`tabulated-list-format' and the sort key from the current buffer,
+which is the buffer displayed in WINDOW."
+  (let* ((indent (and (boundp 'header-line-indent-width) header-line-indent-width))
+         (header (python-view-data--table-header-string
+                  tabulated-list-format
+                  (window-hscroll window)
+                  (window-width window)
+                  indent)))
+    (if indent
+        (setq header-line-format (list "" 'header-line-indent header))
+      (setq header-line-format (list "" header)))))
+
+(defun python-view-data--table-header-format (window)
+  "Rebuild the table header for WINDOW before each redisplay.
+Installed buffer-locally on `pre-redisplay-functions', it keeps the
+header aligned with the body for every horizontal scroll entry point,
+such as commands, the mouse wheel, scroll bars and auto-hscroll.
+`current-buffer' is the buffer displayed in WINDOW.  Does nothing
+outside a `python-view-data-table-mode' buffer with a current table
+format, so other tabulated-list modes keep their static header."
+  (when (and (window-live-p window)
+             (eq (window-buffer window) (current-buffer))
+             (eq python-view-data-current-display-backend 'table)
+             (derived-mode-p 'python-view-data-table-mode)
+             tabulated-list-format
+             tabulated-list-use-header-line)
+    (python-view-data--table-header-refresh window)))
+
+(defun python-view-data--table-header-install ()
+  "Install the scrolling-aware table header in the current buffer.
+Adds a buffer-local `pre-redisplay-functions' hook (available since
+Emacs 25.1, so always present on the supported Emacs 28.1+) that
+rebuilds `header-line-format' before each redisplay.  Called from
+`python-view-data--table-header-after-init', i.e. only in
+`python-view-data-table-mode' buffers."
+  (add-hook 'pre-redisplay-functions
+            #'python-view-data--table-header-format nil t))
+
+(defun python-view-data--table-header-after-init (&rest _)
+  "Install the scrolling table header after `tabulated-list-init-header'.
+Only `python-view-data-table-mode' buffers with a current
+`tabulated-list-format' are affected; other tabulated-list buffers,
+such as package-menu, keep the static header."
+  (when (and (eq python-view-data-current-display-backend 'table)
+             (derived-mode-p 'python-view-data-table-mode)
+             tabulated-list-format)
+    (python-view-data--table-header-install)
+    (let ((window (get-buffer-window (current-buffer) t)))
+      (when (window-live-p window)
+        (python-view-data--table-header-refresh window)))))
+
+(when (fboundp 'tabulated-list-init-header)
+  (advice-add 'tabulated-list-init-header :after
+              #'python-view-data--table-header-after-init))
 
 ;;; Rendering
 

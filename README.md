@@ -82,4 +82,6 @@ Verbs:
 
 In the table buffer, `}` / `{` widen / narrow the current column, `W` and `w`
 set all column widths, `a` aligns columns to their content, and `v` pops up the
-full value of the cell at point.
+full value of the cell at point. When the table is wider than the window, the
+column header follows the horizontal scroll, so the column names stay aligned
+with the data columns (`C-x <` / `C-x >`, mouse wheel, scroll bar, etc.).

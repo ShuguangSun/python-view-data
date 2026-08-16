@@ -286,5 +286,188 @@ carol\tNA
   (python-view-data-test--stop-proc)
   (should-not (get-process "pvd-mock")))
 
+;;; ----------------------------------------------------------------------
+;;; Scrolling table header
+
+(defun python-view-data-test--align-to-position (form)
+  "Absolute column position of an `:align-to' FORM of the shape (+ A B).
+Symbol operands such as `header-line-indent-width' are resolved to
+their current variable values, like the display engine does."
+  (apply #'+ (mapcar (lambda (arg)
+                       (cond ((numberp arg) arg)
+                             ((symbolp arg)
+                              (if (boundp arg) (symbol-value arg) 0))
+                             (t 0)))
+                     (cdr form))))
+
+(defun python-view-data-test--header-items (str)
+  "Return (POS LABEL TEXT) triples for the label runs of header string STR.
+POS is the absolute `:align-to' offset of the run, LABEL the full
+`tabulated-list-column-name' and TEXT the visible label text."
+  (let ((i 0) (n (length str)) (pos nil) (res nil))
+    (while (< i n)
+      (let* ((props (text-properties-at i str))
+             (disp (plist-get props 'display))
+             (form (and (consp disp) (plist-get (cdr disp) :align-to))))
+        (cond
+         (form
+          (setq pos (python-view-data-test--align-to-position form)))
+         ((and pos (plist-get props 'tabulated-list-column-name))
+          (let* ((end (next-single-property-change
+                       i 'tabulated-list-column-name str n)))
+            (push (list pos
+                        (plist-get props 'tabulated-list-column-name)
+                        (substring str i end))
+                  res)
+            (setq pos nil)
+            (setq i (1- end))))))
+      (setq i (1+ i)))
+    (nreverse res)))
+
+(ert-deftest python-view-data-test-header-h0-static-parity ()
+  "At hscroll 0 the dynamic header matches the static header columns."
+  (let* ((fmt (vector (list "aaa" 8 t)
+                      (list "bb" 6 t)
+                      (list "c" 4 t)))
+         (tabulated-list-sort-key nil))
+    (let ((dynamic (python-view-data--table-header-string fmt 0 120 0)))
+      (with-temp-buffer
+        (tabulated-list-mode)
+        (setq tabulated-list-format fmt)
+        (tabulated-list-init-header)
+        (let ((static (if (boundp 'header-line-indent-width)
+                          (nth 2 header-line-format)
+                        (nth 1 header-line-format))))
+          (should (equal (python-view-data-test--header-items static)
+                         (python-view-data-test--header-items dynamic))))))))
+
+(ert-deftest python-view-data-test-header-left-slice ()
+  "A partially visible first column is sliced to its visible part."
+  (let ((fmt (vector (list "abcdefgh" 10 t)
+                     (list "xx" 5 t)))
+        (tabulated-list-sort-key nil))
+    (should (equal '((0 "abcdefgh" "defgh") (8 "xx" "xx"))
+                   (python-view-data-test--header-items
+                    (python-view-data--table-header-string fmt 3 120 0))))))
+
+(ert-deftest python-view-data-test-header-cjk-slice ()
+  "Slicing counts CJK characters as two columns."
+  (let ((fmt (vector (list "中文列名" 12 t)
+                     (list "b" 4 t)))
+        (tabulated-list-sort-key nil))
+    (should (equal '((0 "中文列名" "文列名") (11 "b" "b"))
+                   (python-view-data-test--header-items
+                    (python-view-data--table-header-string fmt 2 120 0))))))
+
+(ert-deftest python-view-data-test-header-skip-hidden ()
+  "Columns fully left or right of the viewport are omitted."
+  (let ((fmt (vector (list "abcdefgh" 10 t)
+                     (list "xx" 5 t)))
+        (tabulated-list-sort-key nil))
+    ;; fully left: only the tail of the second column remains
+    (should (equal '((0 "xx" "x"))
+                   (python-view-data-test--header-items
+                    (python-view-data--table-header-string fmt 12 120 0))))
+    ;; fully right: the first column is cut at the viewport edge
+    (should (equal '((0 "abcdefgh" "abcde"))
+                   (python-view-data-test--header-items
+                    (python-view-data--table-header-string fmt 0 5 0))))))
+
+(ert-deftest python-view-data-test-header-last-column ()
+  "The last column is never truncated and extends to the line end."
+  (let ((fmt (vector (list "a" 4 t)
+                     (list "verylonglabel" 2 t)))
+        (tabulated-list-sort-key nil))
+    (should (equal '((0 "a" "a") (5 "verylonglabel" "verylonglabel"))
+                   (python-view-data-test--header-items
+                    (python-view-data--table-header-string fmt 0 120 0))))))
+
+(ert-deftest python-view-data-test-header-right-align ()
+  "A right-aligned label is placed so it ends at its column edge."
+  (let ((fmt (vector (list "num" 10 t :right-align t)
+                     (list "x" 4 t)))
+        (tabulated-list-sort-key nil))
+    (should (equal '((7 "num" "num") (11 "x" "x"))
+                   (python-view-data-test--header-items
+                    (python-view-data--table-header-string fmt 0 120 0))))
+    (should (equal '((0 "num" "um") (3 "x" "x"))
+                   (python-view-data-test--header-items
+                    (python-view-data--table-header-string fmt 8 120 0))))))
+
+(ert-deftest python-view-data-test-header-sort-indicator ()
+  "The sorted column gets the arrow, bold face and the full label prop."
+  (dolist (desc (list nil t))
+    (let ((tabulated-list-sort-key (cons "b" desc)))
+      (let* ((str (python-view-data--table-header-string
+                   (vector (list "a" 8 t)
+                           (list "b" 6 t))
+                   0 120 0))
+             (item (nth 1 (python-view-data-test--header-items str))))
+        (should (equal "b" (nth 1 item)))
+        (should (equal 'bold (get-text-property 0 'face (nth 2 item))))
+        (should (string-match-p
+                 (regexp-quote (char-to-string
+                                (python-view-data--table-sort-indicator desc)))
+                 (nth 2 item)))))))
+
+(ert-deftest python-view-data-test-header-truncate-narrow ()
+  "A label wider than its column is truncated with an ellipsis."
+  (let ((fmt (vector (list "abcdefghij" 4 t)
+                     (list "z" 4 t)))
+        (tabulated-list-sort-key nil))
+    ;; The ellipsis takes one display column, so the visible part is 3
+    ;; characters for a 4-column label (truncate-string-to-width with
+    ;; trailing ellipsis).
+    (should (equal "abc…"
+                   (nth 2 (car (python-view-data-test--header-items
+                                (python-view-data--table-header-string fmt 0 120 0))))))))
+
+(ert-deftest python-view-data-test-header-indent-width ()
+  "INDENT-WIDTH is added to every `:align-to' offset."
+  (should (equal '(space :align-to (+ 5 0))
+                 (get-text-property
+                  0 'display
+                  (python-view-data--table-header-string
+                   (vector (list "aaa" 8 t)) 0 120 5))))
+  (let ((tabulated-list-padding 3))
+    (should (equal '(space :align-to (+ 5 3))
+                   (get-text-property
+                    0 'display
+                    (python-view-data--table-header-string
+                     (vector (list "aaa" 8 t)) 0 120 5))))))
+
+(ert-deftest python-view-data-test-header-scrolled-past-end ()
+  "A viewport beyond the last column yields an empty header."
+  (should (equal ""
+                 (python-view-data--table-header-string
+                  (vector (list "a" 4 t) (list "b" 4 t)) 100 120 0))))
+
+(ert-deftest python-view-data-test-header-install-advice ()
+  "The init-header advice installs the scrolling header only in table buffers."
+  (with-temp-buffer
+    (tabulated-list-mode)
+    (setq tabulated-list-format (vector (list "a" 4 t)))
+    (tabulated-list-init-header)
+    (should-not (memq #'python-view-data--table-header-format
+                      (buffer-local-value 'pre-redisplay-functions
+                                          (current-buffer)))))
+  (with-temp-buffer
+    (python-view-data-table-mode)
+    (setq tabulated-list-format (vector (list "a" 4 t)))
+    (tabulated-list-init-header)
+    (should (memq #'python-view-data--table-header-format
+                  (buffer-local-value 'pre-redisplay-functions
+                                      (current-buffer)))))
+  ;; `--table-header-refresh' keeps the native header-line structure.
+  (with-temp-buffer
+    (python-view-data-table-mode)
+    (setq tabulated-list-format (vector (list "a" 4 t)))
+    (python-view-data--table-header-refresh (selected-window))
+    (if (boundp 'header-line-indent-width)
+        (progn
+          (should (equal 'header-line-indent (nth 1 header-line-format)))
+          (should (stringp (nth 2 header-line-format))))
+      (should (stringp (nth 1 header-line-format))))))
+
 (provide 'python-view-data-test)
 ;;; python-view-data-test.el ends here
