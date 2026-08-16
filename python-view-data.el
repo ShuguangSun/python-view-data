@@ -1,10 +1,10 @@
 ;;; python-view-data.el --- View data in python      -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2023  Shuguang Sun
+;; Copyright (C) 2023-2026  Shuguang Sun <shuguang79@qq.com>
 
 ;; Author: Shuguang Sun <shuguang79@qq.com>
 ;; Created: 2023/05/03
-;; Version: 0.2
+;; Version: 1.0
 ;; URL: https://github.com/ShuguangSun/python-view-data
 ;; Package-Requires: ((emacs "28.1") (python "0.2"))
 ;; Keywords: tools
