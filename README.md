@@ -7,7 +7,7 @@
 
 View data in Python.
 
-If you are a R user, please find out `[ess-veiw-data](https://github.com/ShuguangSun/ess-view-data)'.
+If you are a R user, please find out `[ess-view-data](https://github.com/ShuguangSun/ess-view-data)'.
 The display layer and transmission protocol of this package are a port of the
 tabulated-list-based design used by ess-view-data v1.3.
 
